@@ -1,58 +1,71 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // nasdaqService.js
 //
-// Fetches top equity volume data from Nasdaq Datalink.
+// Fetches top equity volume data from Alpha Vantage.
 //
 // FREE TIER NOTE:
-//   Nasdaq Datalink's free tier (WIKI dataset) provides end-of-day data.
+//   Alpha Vantage free tier provides 25 API requests/day.
 //   This service fetches recent EOD volume for a curated watchlist and ranks
 //   them — simulating a "last session" snapshot.
-//
-// TO UPGRADE TO LIVE INTRADAY DATA:
-//   Replace fetchVolumeData() with a call to Polygon.io, Alpaca Markets, or
-//   Nasdaq's premium intraday feed. The rest of the app (chart + AI analysis)
-//   works identically — just swap this service.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NASDAQ_API_KEY = process.env.REACT_APP_NASDAQ_API_KEY;
+const ALPHA_VANTAGE_API_KEY = process.env.REACT_APP_ALPHA_VANTAGE_API_KEY;
 
 // Curated watchlist of high-volume S&P 500 equities
+// Reduced to 10 to stay within free tier limits (25 requests/day)
 const WATCHLIST = [
   'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL',
-  'META', 'TSLA', 'AMD', 'INTC', 'BAC',
-  'JPM', 'XOM', 'SPY', 'QQQ', 'PLTR',
+  'META', 'TSLA', 'AMD', 'SPY', 'QQQ',
 ];
 
 /**
  * Fetches the most recent end-of-day volume for a single ticker
- * using the Nasdaq Datalink WIKI dataset.
+ * using Alpha Vantage TIME_SERIES_DAILY endpoint.
  */
 async function fetchTickerVolume(ticker) {
-  const url = `https://data.nasdaq.com/api/v3/datasets/WIKI/${ticker}.json?rows=1&column_index=5&api_key=${NASDAQ_API_KEY}`;
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${ticker}&outputsize=compact&apikey=${ALPHA_VANTAGE_API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${ticker}: ${res.status}`);
   const json = await res.json();
-  const volume = json?.dataset?.data?.[0]?.[1] ?? 0;
-  const date = json?.dataset?.data?.[0]?.[0] ?? 'N/A';
-  return { ticker, volume, date };
+
+  // Alpha Vantage returns an error message if rate limited
+  if (json['Note'] || json['Information']) {
+    throw new Error(`Rate limit reached for ${ticker}`);
+  }
+
+  const timeSeries = json['Time Series (Daily)'];
+  if (!timeSeries) throw new Error(`No data for ${ticker}`);
+
+  // Get the most recent trading day
+  const latestDate = Object.keys(timeSeries)[0];
+  const latestData = timeSeries[latestDate];
+  const volume = parseInt(latestData['5. volume'], 10) ?? 0;
+
+  return { ticker, volume, date: latestDate };
 }
 
 /**
- * Fetches volume for all watchlist tickers in parallel,
- * sorts by volume descending, and returns the top 10.
+ * Fetches volume for all watchlist tickers sequentially to avoid
+ * hitting Alpha Vantage rate limits, sorts by volume descending,
+ * and returns the top 10.
  */
 export async function fetchTop10ByVolume() {
-  const results = await Promise.allSettled(
-    WATCHLIST.map((ticker) => fetchTickerVolume(ticker))
-  );
+  const results = [];
 
-  const successful = results
-    .filter((r) => r.status === 'fulfilled')
-    .map((r) => r.value)
+  for (const ticker of WATCHLIST) {
+    try {
+      const data = await fetchTickerVolume(ticker);
+      results.push(data);
+      // Small delay between requests to respect rate limits
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    } catch (err) {
+      console.warn(`Skipping ${ticker}:`, err.message);
+    }
+  }
+
+  return results
     .sort((a, b) => b.volume - a.volume)
     .slice(0, 10);
-
-  return successful;
 }
 
 /**
@@ -72,8 +85,6 @@ export function getMockData() {
     { ticker: 'PLTR',  volume: 38_400_000 },
     { ticker: 'META',  volume: 31_600_000 },
   ];
-
-  // Add ±8% random variation to simulate live refresh
   return base.map((item) => ({
     ...item,
     volume: Math.round(item.volume * (0.92 + Math.random() * 0.16)),
