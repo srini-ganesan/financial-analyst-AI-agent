@@ -18,7 +18,7 @@ import { analyzeTop3 } from './claudeService';
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const HAS_NASDAQ_KEY = !!process.env.REACT_APP_ALPHA_VANTAGE_API_KEY;
-const HAS_ANTHROPIC_KEY = !!process.env.REACT_APP_ANTHROPIC_API_KEY;
+const HAS_ANTHROPIC_KEY = true; // Handled server-side
 
 export default function App() {
   const [volumeData, setVolumeData] = useState([]);
