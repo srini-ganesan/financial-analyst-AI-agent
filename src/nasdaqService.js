@@ -15,7 +15,6 @@ const ALPHA_VANTAGE_API_KEY = process.env.REACT_APP_ALPHA_VANTAGE_API_KEY;
 // Reduced to 10 to stay within free tier limits (25 requests/day)
 const WATCHLIST = [
   'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL',
-  'META', 'TSLA', 'AMD', 'SPY', 'QQQ',
 ];
 
 /**
@@ -65,7 +64,7 @@ export async function fetchTop10ByVolume() {
 
   return results
     .sort((a, b) => b.volume - a.volume)
-    .slice(0, 10);
+    .slice(0, 5);
 }
 
 /**
@@ -74,16 +73,11 @@ export async function fetchTop10ByVolume() {
  */
 export function getMockData() {
   const base = [
-    { ticker: 'SPY',   volume: 98_200_000 },
-    { ticker: 'NVDA',  volume: 87_400_000 },
     { ticker: 'AAPL',  volume: 74_300_000 },
-    { ticker: 'QQQ',   volume: 68_100_000 },
-    { ticker: 'TSLA',  volume: 61_500_000 },
-    { ticker: 'AMD',   volume: 54_700_000 },
-    { ticker: 'AMZN',  volume: 48_200_000 },
     { ticker: 'MSFT',  volume: 41_900_000 },
-    { ticker: 'PLTR',  volume: 38_400_000 },
-    { ticker: 'META',  volume: 31_600_000 },
+    { ticker: 'NVDA',  volume: 87_400_000 },
+    { ticker: 'AMZN',  volume: 48_200_000 },
+    { ticker: 'GOOGL', volume: 31_600_000 },
   ];
   return base.map((item) => ({
     ...item,
