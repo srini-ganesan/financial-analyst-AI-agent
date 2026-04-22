@@ -17,7 +17,7 @@ import { fetchTop10ByVolume, getMockData } from './nasdaqService';
 import { analyzeTop3 } from './claudeService';
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-const HAS_NASDAQ_KEY = !!process.env.REACT_APP_NASDAQ_API_KEY;
+const HAS_NASDAQ_KEY = !!process.env.REACT_APP_ALPHA_VANTAGE_API_KEY;
 const HAS_ANTHROPIC_KEY = !!process.env.REACT_APP_ANTHROPIC_API_KEY;
 
 export default function App() {
@@ -135,7 +135,7 @@ export default function App() {
         <div style={styles.demoBanner}>
           <span style={{ color: '#F5C842' }}>◈ DEMO MODE</span>
           <span style={styles.demoText}>
-            {!HAS_NASDAQ_KEY && 'REACT_APP_NASDAQ_API_KEY not set — using mock volume data. '}
+           {!HAS_NASDAQ_KEY && 'REACT_APP_ALPHA_VANTAGE_API_KEY not set — using mock volume data. '}
             {!HAS_ANTHROPIC_KEY && 'REACT_APP_ANTHROPIC_API_KEY not set — using mock AI analysis.'}
             {' '}Add your keys to <code style={styles.code}>.env</code> to enable live data.
           </span>
